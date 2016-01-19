@@ -1,0 +1,244 @@
+<?php
+
+// src/AppBundle/Entity/User.php
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
+use Doctrine\ORM\EntityRepository;
+
+/**
+ * @ORM\Table(name="users")
+ * @ORM\Entity(repositoryClass="AppBundle\Entity\UserRepository")
+ * @ORM\HasLifecycleCallbacks
+ */
+class User implements UserInterface, \Serializable
+{
+    /**
+     * @ORM\Column(type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+  /**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
+     * @Assert\Email()
+     */
+    private $email;
+
+    /**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
+     */
+    private $username;
+
+    /**
+     * @ORM\Column(type="string", length=25)
+     */
+    private $firstname;
+    
+        /**
+     * @ORM\Column(type="string", length=25)
+     */
+    private $lastname;
+
+    /**
+     * @Assert\NotBlank()
+     * @Assert\Length(max = 4096)
+     */
+    private $plainPassword;
+
+    /**
+     * The below length depends on the "algorithm" you use for encoding
+     * the password, but this works well with bcrypt
+     *
+     * @ORM\Column(type="string", length=64)
+     */
+    private $password;
+
+    /**
+     * @ORM\Column(type="json_array")
+     */
+    private $roles = array("ROLE_USER");
+
+    /**
+     * @ORM\Column(name="is_active", type="boolean")
+     */
+    private $isActive;
+    
+    /**
+     * @ORM\Column(type="datetime", nullable=false)
+     */
+    private $createdAt;
+    
+    /**
+     * @ORM\Column(type="datetime")
+    */
+    private $changedAt;
+
+    /**
+     * @ORM\OneToMany(targetEntity="Task", mappedBy="assignee")
+     */
+    private $assignedTo;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="Task", mappedBy="createdBy")
+     */
+    private $creatorOfTask;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="Folder", mappedBy="createdBy")
+     */
+    private $creatorOfFolder;
+    
+        /**
+     * @ORM\OneToMany(targetEntity="Tag", mappedBy="createdBy")
+     */
+    private $creatorOfTag;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="Comment", mappedBy="createdBy")
+     */
+    private $creatorOfComment;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="Tag", mappedBy="owner")
+     */
+    private $ownerOfTag;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="Folder", mappedBy="manager")
+     */
+    private $managerOfFolders;
+    
+    /**
+     * @ORM\ManyToMany(targetEntity="Task", mappedBy="follower")
+     */
+    private $followerOf;
+    
+    /**
+     * @ORM\ManyToMany(targetEntity="Folder", mappedBy="member")
+     */
+    private $memberOfFolders;
+    
+    /**
+     * @ORM\OneToOne(targetEntity="Folder", inversedBy="privateFolderOf")
+     */
+    private $privateFolder;
+    
+    /**
+     * @ORM\ManyToMany(targetEntity="Context", inversedBy="managers")
+     */
+    private $managerOfContexts;
+    
+     /**
+     * @ORM\ManyToOne(targetEntity="Context", inversedBy="activeContextUser")
+     */
+    private $activeContext;   
+
+    public function __construct()
+    {
+        $this->isActive = true;
+        // may not be needed, see section on salt below
+        // $this->salt = md5(uniqid(null, true));
+    }
+
+    /** 
+     *  @ORM\PrePersist 
+     */
+    public function doStuffOnPrePersist()
+    {
+        $this->createdAt = new \DateTime("now");
+        $this->changedAt = new \DateTime("now");
+ 
+    }
+
+    /**
+     * @ORM\PreUpdate
+     */
+    public function doStuffOnPreUpdate()
+    {
+        $this->changedAt = new \DateTime("now");
+    }
+    
+        /**
+     * @ORM\PreRemove
+     */
+    public function doStuffOnPreRemove()
+    {
+
+    }
+    
+    public function getUsername()
+    {
+        return $this->username;
+    }
+
+    public function getSalt()
+    {
+        // you *may* need a real salt depending on your encoder
+        // see section on salt below
+        return null;
+    }
+
+    public function getPassword()
+    {
+        return $this->password;
+    }
+
+    /**
+     * Returns the roles or permissions granted to the user for security.
+     */
+    public function getRoles()
+    {
+        $roles = $this->roles;
+
+        // guarantees that a user always has at least one role for security
+        if (empty($roles)) {
+            $roles = 'ROLE_USER';
+        }
+
+        return array_unique($roles);
+    }
+    
+   
+
+    public function setRoles(array $roles)
+    {
+        $this->roles = $roles;
+    }
+
+
+    public function eraseCredentials()
+    {
+    }
+
+    /** @see \Serializable::serialize() */
+    public function serialize()
+    {
+        return serialize(array(
+            $this->id,
+            $this->username,
+            $this->password,
+            // see section on salt below
+            // $this->salt,
+        ));
+    }
+
+    /** @see \Serializable::unserialize() */
+    public function unserialize($serialized)
+    {
+        list (
+            $this->id,
+            $this->username,
+            $this->password,
+            // see section on salt below
+            // $this->salt
+        ) = unserialize($serialized);
+    }
+        
+}

@@ -1,0 +1,127 @@
+<?php
+
+// src/AppBundle/Entity/Folder.php
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
+
+
+/**
+ * @ORM\Table(name="folders")
+ * @ORM\Entity(repositoryClass="AppBundle\Entity\FolderRepository")
+ * @ORM\HasLifecycleCallbacks
+ */
+class Folder
+{
+    const ACCESS_PRIVATE = 0;
+    const ACCESS_PROTECTED = 1;
+    const ACCESS_PUBLIC = 2;
+    
+    /**
+     * @ORM\Column(type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+    
+        /**
+     * @ORM\Column(type="integer")
+     */
+    private $visibility;
+
+    /**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
+     */
+    private $title;
+
+    /**
+     * @ORM\Column(type="text")
+     */
+    private $description;
+    
+    /**
+     * @ORM\Column(type="datetime", nullable=false)
+     */
+    private $createdAt;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="User", inversedBy="creatorOfFolder")
+     */
+    private $createdBy;
+    
+    /**
+     * @ORM\OneToOne(targetEntity="User", mappedBy="privateFolder")
+     */
+    private $privateFolderOf;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="Task", mappedBy="folder")
+     */
+    private $tasks;
+
+    /**
+     * @ORM\ManyToMany(targetEntity="User", inversedBy="memberOfFolders")
+     */
+    private $member;
+    
+    /**
+     * @ORM\ManyToOne(targetEntity="Context", inversedBy="folders")
+     */
+    private $context;
+    
+    
+    /**
+     * @ORM\ManyToOne(targetEntity="User", inversedBy="managerOfFolders")
+     */
+    private $manager;
+
+    /**
+     * @ORM\Column(type="datetime")
+    */
+    private $changedAt;
+
+    public function __construct()
+    {
+        $this->status = "created";
+        $this->createdAt = new \DateTime("now");
+        $this->changedAt = new \DateTime("now");
+        $this->setVisibility = 2;
+    }
+    
+    public function setPrivate($user)
+    {
+        $this->status = "created";
+        $this->title = 'Private Project ' . $user->getUsername();
+        $this->description = 'Private Project of' . $user->getUsername();
+        $this->createdAt = new \DateTime("now");
+        $this->changedAt = new \DateTime("now");
+        $this->visibility = 0;
+        $this->projectManager = $user;
+        $this->privateProjectOf = $user;
+        $this->createdBy = $user;
+    }
+    
+    /** 
+     *  @ORM\PrePersist 
+     */
+    public function doStuffOnPrePersist()
+    {
+        $this->createdAt = new \DateTime("now");
+        $this->changedAt = new \DateTime("now");
+    }
+    
+
+
+    /**
+     * @ORM\PreUpdate
+     */
+    public function doStuffOnPreUpdate()
+    {
+        $this->changedAt = new \DateTime("now");
+    }
+
+}

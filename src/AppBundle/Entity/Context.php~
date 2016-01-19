@@ -1,0 +1,96 @@
+<?php
+
+// src/AppBundle/Entity/Context.php
+namespace AppBundle\Entity;
+
+use Doctrine\ORM\Mapping as ORM;
+use Symfony\Component\Security\Core\User\UserInterface;
+use Symfony\Bridge\Doctrine\Validator\Constraints\UniqueEntity;
+use Symfony\Component\Validator\Constraints as Assert;
+
+
+/**
+ * @ORM\Table(name="app_context")
+ * @ORM\Entity(repositoryClass="AppBundle\Entity\ContextRepository")
+ * @ORM\HasLifecycleCallbacks
+ */
+class Context
+{
+    /**
+     * @ORM\Column(type="integer")
+     * @ORM\Id
+     * @ORM\GeneratedValue(strategy="AUTO")
+     */
+    private $id;
+
+    /**
+     * @ORM\Column(type="string", length=255)
+     * @Assert\NotBlank()
+     */
+    private $title;
+
+    /**
+     * @ORM\Column(type="text")
+     */
+    private $description;
+
+    /**
+     * @ORM\OneToMany(targetEntity="Folder", mappedBy="context")
+     */
+    private $folders;
+    
+    /**
+     * @ORM\ManyToMany(targetEntity="User", inversedBy="contexts")
+     */
+    private $members;
+    
+    /**
+     * @ORM\ManyToMany(targetEntity="User", inversedBy="managerOfContexts")
+     */
+    private $managers;
+    
+    /**
+     * @ORM\OneToMany(targetEntity="User", mappedBy="activeContext")
+     */
+    private $activeContextUser; 
+    
+    
+    /**
+     * @ORM\Column(type="datetime", nullable=false)
+     */
+    private $createdAt;
+
+    /**
+     * @ORM\ManyToOne(targetEntity="User", inversedBy="creatorOfTask")
+     */
+    private $createdBy;
+
+    /**
+     * @ORM\Column(type="datetime")
+    */
+    private $changedAt;
+
+    public function __construct()
+    {
+        $this->status = "created";
+        $this->createdAt = new \DateTime("now");
+        $this->changedAt = new \DateTime("now");
+    }
+    
+    /** 
+     *  @ORM\PrePersist 
+     */
+    public function doStuffOnPrePersist()
+    {
+        $this->createdAt = new \DateTime("now");
+        $this->changedAt = new \DateTime("now");
+    }
+
+    /**
+     * @ORM\PreUpdate
+     */
+    public function doStuffOnPreUpdate()
+    {
+        $this->changedAt = new \DateTime("now");
+    }
+}
